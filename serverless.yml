@@ -1,0 +1,150 @@
+service: simple-serverless-example
+# package:
+#   individually: true
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+  stage: dev
+  environment:
+    NODE_ENV: dev
+    DYNAMODB_ORDER_TABLE_NAME: '${self:service}-${self:provider.stage}-order'
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - SNS:Publish
+          Resource:
+            Fn::Join:
+              - ':'
+              - - 'arn:aws:sns'
+                - Ref: 'AWS::Region'
+                - Ref: 'AWS::AccountId'
+                - 'orderTopic'
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource: 'arn:aws:dynamodb:${aws:region}:*:table/${self:provider.environment.DYNAMODB_ORDER_TABLE_NAME}'
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-offline
+
+functions:
+  createOrder:
+    handler: src/framework-and-drivers/serverless-lambda/create-order/index.createOrder
+    events:
+      - http:
+          path: /order/{restaurantId}
+          method: post
+          request:
+            parameters:
+              paths:
+                restaurantId: true
+    environment:
+      ORDER_TOPIC_URL:
+        Fn::Join:
+          - ':'
+          - - 'arn:aws:sns'
+            - Ref: 'AWS::Region'
+            - Ref: 'AWS::AccountId'
+            - 'orderTopic'
+  processOrder:
+    handler: src/framework-and-drivers/serverless-lambda/process-order/index.processOrder
+    environment:
+      ORDER_TABLE: ${self:provider.environment.DYNAMODB_ORDER_TABLE_NAME}
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - createOrderQueue
+              - Arn
+
+resources:
+  Resources:
+    orderTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.DYNAMODB_ORDER_TABLE_NAME}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: timestamp
+            AttributeType: N
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+          - AttributeName: timestamp
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+
+    orderTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: orderTopic
+
+    createOrderQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: createOrderQueue
+        RedrivePolicy:
+          deadLetterTargetArn:
+            Fn::GetAtt:
+              - createOrderQueueDLQ
+              - Arn
+          maxReceiveCount: 3
+
+    createOrderQueueDLQ:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: createOrderQueueDLQ
+
+    createOrderQueueSubscription:
+      Type: 'AWS::SNS::Subscription'
+      Properties:
+        TopicArn:
+          Fn::Join:
+            - ':'
+            - - 'arn:aws:sns'
+              - Ref: 'AWS::Region'
+              - Ref: 'AWS::AccountId'
+              - 'orderTopic'
+        Endpoint:
+          Fn::GetAtt:
+            - createOrderQueue
+            - Arn
+        Protocol: sqs
+        RawMessageDelivery: true
+
+    snsQueuePolicy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Sid: 'allow-sns-messages'
+              Effect: 'Allow'
+              Principal:
+                Service:
+                  - 'sns.amazonaws.com'
+              Resource:
+                Fn::GetAtt:
+                  - createOrderQueue
+                  - Arn
+              Action: 'SQS:SendMessage'
+              Condition:
+                ArnEquals:
+                  'aws:SourceArn':
+                    Ref: orderTopic
+        Queues:
+          - createOrderQueue
+      DependsOn:
+        - createOrderQueueSubscription

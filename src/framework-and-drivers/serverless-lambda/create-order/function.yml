@@ -1,0 +1,18 @@
+createOrder:
+  handler: src/framework-and-drivers/serverless-lambda/create-order/index.createOrder
+  environment:
+    ORDER_TOPIC_URL:
+      Fn::Join:
+        - ':'
+        - - 'arn:aws:sns'
+          - Ref: 'AWS::Region'
+          - Ref: 'AWS::AccountId'
+          - 'orderTopic'
+  events:
+    - http:
+        path: /order/{restaurantId}
+        method: post
+        request:
+          parameters:
+            paths:
+              restaurantId: true

@@ -1,0 +1,10 @@
+processOrder:
+  handler: src/framework-and-drivers/serverless-lambda/process-order/index.processOrder
+  environment:
+    ORDER_TABLE: ${self:provider.environment.DYNAMODB_ORDER_TABLE_NAME}
+  events:
+    - sqs:
+        arn:
+          Fn::GetAtt:
+            - createOrderQueue
+            - Arn

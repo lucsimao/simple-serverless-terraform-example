@@ -47,20 +47,6 @@ variable "host_port" {
   default = 80
 }
 
-variable "ecr_repository" {
-  type     = string
-  nullable = false
-}
-
-variable "ecr_tag" {
-  type     = string
-  nullable = false
-}
-
-variable "ecr_registry" {
-  type     = string
-  nullable = false
-}
 
 variable "health_check_path" {
   type    = string

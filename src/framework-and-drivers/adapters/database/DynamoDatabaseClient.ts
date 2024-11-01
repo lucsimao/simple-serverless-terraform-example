@@ -1,5 +1,4 @@
-import { DynamoDB } from 'aws-sdk';
-import { PutItemInput } from 'aws-sdk/clients/dynamodb';
+import { DynamoDB, PutItemCommandInput } from '@aws-sdk/client-dynamodb';
 
 import { DatabaseClient } from '../../repositories/order/ProcessOrderData';
 
@@ -10,10 +9,10 @@ export class DynamoDatabaseClient implements DatabaseClient {
   ) {}
 
   public async create<T>(input: T): Promise<void> {
-    const item: PutItemInput = {
+    const item: PutItemCommandInput = {
       TableName: this.tableName,
       Item: DynamoDB.Converter.marshall(input as { [key: string]: unknown }),
     };
-    await this.dynamoClient.putItem(item).promise();
+    await this.dynamoClient.putItem(item);
   }
 }

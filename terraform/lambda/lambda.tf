@@ -1,5 +1,5 @@
 locals {
-  serverless_path           = "./serverless"
+  serverless_path           = "./serverless/build/src"
   process_order_lambda_name = "processOrder"
 }
 

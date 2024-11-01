@@ -1,5 +1,5 @@
+import { SNS } from '@aws-sdk/client-sns';
 import { APIGatewayProxyEvent } from 'aws-lambda';
-import { SNS } from 'aws-sdk';
 
 import { CreateOrder } from '../../../application-business-rules/use-cases/CreateOrder';
 import { Order } from '../../../enterprise-business-rules/entities/Order';

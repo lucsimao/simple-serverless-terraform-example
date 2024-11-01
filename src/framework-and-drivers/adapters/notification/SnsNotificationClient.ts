@@ -1,4 +1,4 @@
-import { SNS } from 'aws-sdk';
+import { SNS } from '@aws-sdk/client-sns';
 
 import { NotificationClient } from '../../repositories/order/CreateOrderData';
 
@@ -13,6 +13,6 @@ export class SnsNotificationClient implements NotificationClient {
       Message: JSON.stringify(message),
       TopicArn: this.topicURL,
     };
-    await this.snsClient.publish(messageData).promise();
+    await this.snsClient.publish(messageData);
   }
 }

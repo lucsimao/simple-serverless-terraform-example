@@ -1,5 +1,5 @@
+import { DynamoDB } from '@aws-sdk/client-dynamodb';
 import { SQSEvent, SQSRecord } from 'aws-lambda';
-import { DynamoDB } from 'aws-sdk';
 
 import { ProcessOrder } from '../../../application-business-rules/use-cases/ProcessOrder';
 import { Order } from '../../../enterprise-business-rules/entities/Order';

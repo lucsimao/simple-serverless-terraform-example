@@ -1,3 +1,9 @@
+variable "stage" {
+  type        = string
+  description = "The region of the project"
+  default     = "dev"
+}
+
 variable "region" {
   type        = string
   description = "The region of the project"
